@@ -16,7 +16,7 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100vh;
+            height: 100dvh; /* 修正：使用 100dvh 適應手機瀏覽器底部導航列高度 */
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #0f172a;
@@ -29,12 +29,16 @@
         #game-container {
             position: relative;
             width: 100vw;
-            height: 100vh;
+            height: 100%;
             max-width: 480px;
             max-height: 850px;
             background: linear-gradient(to bottom, #0f2027 0%, #203a43 50%, #2c5364 100%);
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         canvas {
@@ -321,10 +325,10 @@
 
         .controls-hint {
             position: absolute;
-            bottom: 12px;
+            bottom: 6px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             color: rgba(255,255,255,0.7);
             z-index: 10;
             pointer-events: none;
@@ -963,7 +967,7 @@
             gameoverScreen.classList.remove('hidden');
         }
 
-        function restartGame() {
+        /function restartGame() {
             startGame(currentDifficulty);
         }
 
