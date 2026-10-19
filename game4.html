@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Utopia 7Cs Craft</title>
+    <!-- Matter.js Physics Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            max-height: 850px;
+            background: linear-gradient(to bottom, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* HUD / Header */
+        .hud {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 32, 39, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+        .hud-item {
+            text-align: center;
+        }
+        .hud-label {
+            font-size: 0.68rem;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+        }
+        .hud-value {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .next-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .next-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            overflow: hidden;
+        }
+        .next-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .danger-warning {
+            position: absolute;
+            top: 72px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            z-index: 12;
+            display: none;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(0.95); }
+            100% { transform: translateX(-50%) scale(1.05); }
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            padding: 20px;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 20px 16px;
+            border-radius: 24px;
+            width: 92%;
+            max-height: 94vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+
+        .lang-selector {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+        }
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .lang-btn.active {
+            background: #38bdf8;
+            color: #0f172a;
+            font-weight: bold;
+            border-color: #38bdf8;
+        }
+
+        h1 {
+            margin: 0 0 6px 0;
+            font-size: 1.25rem;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(56, 189, 248, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .title-logo {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+        }
+
+        p {
+            color: #e2e8f0;
+            font-size: 0.78rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .preview-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #94a3b8;
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: #facc15;
+            color: #0f172a;
+            font-weight: bold;
+            border-color: #facc15;
+        }
+
+        .high-score-badge {
+            background: rgba(250, 204, 21, 0.15);
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            color: #facc15;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        /* 8 Tier List Display */
+        .tier-guide {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+        .tier-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.62rem;
+            color: #cbd5e1;
+        }
+        .tier-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+            border: 1px solid rgba(255,255,255,0.3);
+            overflow: hidden;
+        }
+        .tier-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .difficulty-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-diff {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
+            transition: transform 0.1s;
+        }
+        .btn-diff.easy {
+            background: linear-gradient(135deg, #34d399, #059669);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+        .btn-diff.hard {
+            background: linear-gradient(135deg, #f43f5e, #be123c);
+            box-shadow: 0 4px 12px rgba(190, 18, 60, 0.4);
+        }
+        .btn-diff:active {
+            transform: scale(0.96);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-size: 0.88rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            flex: 1;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #475569, #1e293b);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.7);
+            z-index: 10;
+            pointer-events: none;
+            width: 90%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- HUD -->
+        <div class="hud">
+            <div class="hud-item">
+                <div class="hud-label" id="label-score">SCORE</div>
+                <div id="score" class="hud-value">0</div>
+            </div>
+            <div class="next-container">
+                <div class="hud-label" id="label-next">NEXT:</div>
+                <div id="next-preview" class="next-preview">🛡️</div>
+            </div>
+        </div>
+
+        <div id="danger-warning" class="danger-warning">⚠️ OVERFLOW WARNING!</div>
+
+        <!-- Main Physics Canvas -->
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="controls-hint" id="controls-hint">← Drag & release to drop elements →</div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <div class="panel">
+                <div class="lang-selector">
+                    <button class="lang-btn" onclick="setLanguage('zh-HK')">繁體中文</button>
+                    <button class="lang-btn" onclick="setLanguage('zh-CN')">简体中文</button>
+                    <button class="lang-btn active" onclick="setLanguage('en')">English</button>
+                </div>
+
+                <h1>
+                    <img src="SU image.jpg" alt="Logo" class="title-logo">
+                    <span id="start-title">Utopia 7Cs Craft</span>
+                    <img src="SU image.jpg" alt="Logo" class="title-logo">
+                </h1>
+                
+                <div class="preview-tabs">
+                    <button class="tab-btn" id="tab-easy" onclick="switchPreview('easy')">Easy</button>
+                    <button class="tab-btn active" id="tab-normal" onclick="switchPreview('normal')">Normal</button>
+                    <button class="tab-btn" id="tab-hard" onclick="switchPreview('hard')">Hard</button>
+                </div>
+
+                <div id="start-highscore" class="high-score-badge">🏆 Normal High Score: 0</div>
+
+                <p id="start-desc">Craft and merge matching 7Cs elements to evolve into larger concepts, ultimately unlocking the grand Utopia Logo!</p>
+                
+                <div class="tier-guide" id="tier-guide">
+                    <!-- JS generated tier items -->
+                </div>
+
+                <div class="difficulty-group">
+                    <button class="btn-diff easy" id="btn-easy" onclick="startGame('easy')">🟢 簡單模式 (標準休閒)</button>
+                    <button class="btn-diff" id="btn-normal" onclick="startGame('normal')">🔵 中等模式 (標準挑戰)</button>
+                    <button class="btn-diff hard" id="btn-hard" onclick="startGame('hard')">🔴 困難模式 (極限挑戰)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="screen hidden">
+            <div class="panel">
+                <h1 id="gameover-title">💥 Container Overflows! 💥</h1>
+                <p id="gameover-desc">Final Score:</p>
+                <div id="final-score" style="font-size: 2rem; font-weight: bold; color: #38bdf8; margin-bottom: 4px;">0</div>
+                
+                <div id="gameover-highscore" class="high-score-badge">🏆 Normal High Score: 0</div>
+
+                <div class="btn-group">
+                    <button class="btn" id="btn-restart" onclick="restartGame()">Play Again</button>
+                    <button class="btn btn-secondary" id="btn-home" onclick="goHome()">Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PRELOAD LOGO IMAGE ---
+        const logoImg = new Image();
+        logoImg.src = 'SU image.jpg';
+
+        // --- BASE TIERS DEFINITION ---
+        const BASE_TIERS = [
+            { level: 1, name: 'Commitment',   icon: '🛡️', color: '#1e3a8a', baseRadius: 16, score: 2, isImage: false },
+            { level: 2, name: 'Courage',      icon: '⚡', color: '#b45309', baseRadius: 24, score: 4, isImage: false },
+            { level: 3, name: 'Cultivation',  icon: '💥', color: '#831843', baseRadius: 33, score: 8, isImage: false },
+            { level: 4, name: 'Compassion',   icon: '✨', color: '#065f46', baseRadius: 44, score: 16, isImage: false },
+            { level: 5, name: 'Connection',   icon: '🌐', color: '#312e81', baseRadius: 57, score: 32, isImage: false },
+            { level: 6, name: 'Communication',icon: '💬', color: '#701a75', baseRadius: 72, score: 64, isImage: false },
+            { level: 7, name: 'Consideration',icon: '🎯', color: '#14532d', baseRadius: 88, score: 128, isImage: false },
+            { level: 8, name: 'Utopia Logo',  icon: '',   color: '#0284c7', baseRadius: 106, score: 256, isImage: true, imgObj: logoImg }
+        ];
+
+        let TIERS = [];
+
+        function updateTierRadii() {
+            let scale = 1.0;
+            if (currentDifficulty === 'easy') {
+                scale = 1.0;
+            } else if (currentDifficulty === 'normal') {
+                scale = 1.12;
+            } else if (currentDifficulty === 'hard') {
+                scale = 1.25;
+            }
+
+            TIERS = BASE_TIERS.map(t => ({
+                ...t,
+                radius: Math.round(t.baseRadius * scale)
+            }));
+        }
+
+        // --- I18N DICTIONARY ---
+        const i18n = {
+            'en': {
+                labelScore: 'SCORE',
+                labelNext: 'NEXT:',
+                controlsHint: '← Drag & release to drop elements →',
+                startTitle: 'Utopia 7Cs Craft',
+                startDesc: 'Craft and merge matching 7Cs elements to evolve into larger concepts, reaching the grand Utopia Logo!',
+                btnEasy: '🟢 Easy Mode (Standard Relaxed)',
+                btnNormal: '🔵 Normal Mode (Balanced Challenge)',
+                btnHard: '🔴 Hard Mode (Extreme Challenge)',
+                btnRestart: 'Play Again',
+                btnHome: 'Main Menu',
+                gameoverTitle: '💥 Container Overflows! 💥',
+                gameoverDesc: 'Final Score:',
+                modes: { easy: 'Easy', normal: 'Normal', hard: 'Hard' },
+                highScoreFormat: (mode, score) => `🏆 ${mode} High Score: ${score}`,
+                newHighScoreFormat: (mode, score) => `🔥 NEW ${mode} HIGH SCORE: ${score}`
+            },
+            'zh-HK': {
+                labelScore: '得分',
+                labelNext: '下一個:',
+                controlsHint: '← 滑動選擇位置，放開手落下元素 →',
+                startTitle: 'Utopia 7Cs 合成台',
+                startDesc: '將相同等級的 7Cs 精神元素合成升級，最終解鎖宏大的 Utopia 標誌！',
+                btnEasy: '🟢 簡單模式 (標準休閒)',
+                btnNormal: '🔵 中等模式 (標準挑戰)',
+                btnHard: '🔴 困難模式 (極限挑戰)',
+                btnRestart: '再次挑戰',
+                btnHome: '返回主頁',
+                gameoverTitle: '💥 容器頂部溢出！ 💥',
+                gameoverDesc: '最終總得分：',
+                modes: { easy: '簡單模式', normal: '中等模式', hard: '困難模式' },
+                highScoreFormat: (mode, score) => `🏆 ${mode}最高分：${score}`,
+                newHighScoreFormat: (mode, score) => `🔥 創下${mode}新高分：${score}`
+            },
+            'zh-CN': {
+                labelScore: '得分',
+                labelNext: '下一个:',
+                controlsHint: '← 滑动选择位置，释放手落下元素 →',
+                startTitle: 'Utopia 7Cs 合成台',
+                startDesc: '将相同等级的 7Cs 精神元素合成升级，最终解锁宏大的 Utopia 标志！',
+                btnEasy: '🟢 简单模式 (标准休闲)',
+                btnNormal: '🔵 中等模式 (标准挑战)',
+                btnHard: '🔴 困难模式 (极限挑战)',
+                btnRestart: '再次挑战',
+                btnHome: '返回主页',
+                gameoverTitle: '💥 容器顶部溢出！ 💥',
+                gameoverDesc: '最终总得分：',
+                modes: { easy: '简单模式', normal: '中等模式', hard: '困难模式' },
+                highScoreFormat: (mode, score) => `🏆 ${mode}最高分：${score}`,
+                newHighScoreFormat: (mode, score) => `🔥 创下${mode}新高分：${score}`
+            }
+        };
+
+        let currentLang = 'en';
+        let currentDifficulty = 'normal';
+        let previewDifficulty = 'normal';
+
+        // Matter.js Modules
+        const { Engine, Render, Runner, Bodies, Composite, Body, Events, Vector } = Matter;
+
+        let engine, runner;
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+
+        let logicalWidth = 480;
+        let logicalHeight = 850;
+        let wallPadding = 15;
+        let dangerLineY = 120;
+
+        let score = 0;
+        let gameActive = false;
+        let nextTierIndex = 0;
+        let currentAimX = logicalWidth / 2;
+        let isAiming = false;
+        let canDrop = true;
+        let dropCooldown = false;
+
+        let dangerTimer = 0;
+        let particles = [];
+        let popups = [];
+
+        // DOM elements
+        const scoreEl = document.getElementById('score');
+        const nextPreviewEl = document.getElementById('next-preview');
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const dangerWarningEl = document.getElementById('danger-warning');
+
+        function initTierGuide() {
+            updateTierRadii();
+            const guide = document.getElementById('tier-guide');
+            guide.innerHTML = '';
+            TIERS.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'tier-item';
+                let iconHtml = t.isImage ? `<img src="${t.imgObj.src}" alt="${t.name}">` : t.icon;
+                item.innerHTML = `
+                    <div class="tier-icon" style="background:${t.color}">${iconHtml}</div>
+                    <span>${t.name}</span>
+                `;
+                guide.appendChild(item);
+            });
+        }
+        initTierGuide();
+
+        function getHighScore(diff) {
+            return localStorage.getItem(`utopia_craft_score_${diff}`) || 0;
+        }
+
+        function switchPreview(diff) {
+            previewDifficulty = diff;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${diff}`).classList.add('active');
+            updateHighScoreDisplay();
+        }
+
+        function updateHighScoreDisplay() {
+            const langData = i18n[currentLang];
+            const pMode = langData.modes[previewDifficulty];
+            const pScore = getHighScore(previewDifficulty);
+            document.getElementById('start-highscore').innerText = langData.highScoreFormat(pMode, pScore);
+
+            const cMode = langData.modes[currentDifficulty];
+            const cScore = getHighScore(currentDifficulty);
+            document.getElementById('gameover-highscore').innerText = langData.highScoreFormat(cMode, cScore);
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const data = i18n[lang];
+
+            document.getElementById('label-score').innerText = data.labelScore;
+            document.getElementById('label-next').innerText = data.labelNext;
+            document.getElementById('controls-hint').innerText = data.controlsHint;
+            document.getElementById('start-title').innerText = data.startTitle;
+            document.getElementById('start-desc').innerText = data.startDesc;
+            document.getElementById('btn-easy').innerText = data.btnEasy;
+            document.getElementById('btn-normal').innerText = data.btnNormal;
+            document.getElementById('btn-hard').innerText = data.btnHard;
+            document.getElementById('gameover-title').innerText = data.gameoverTitle;
+            document.getElementById('gameover-desc').innerText = data.gameoverDesc;
+            document.getElementById('btn-restart').innerText = data.btnRestart;
+            document.getElementById('btn-home').innerText = data.btnHome;
+
+            updateHighScoreDisplay();
+
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function resizeCanvas() {
+            logicalWidth = canvas.parentElement.clientWidth;
+            logicalHeight = canvas.parentElement.clientHeight;
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = logicalWidth * dpr;
+            canvas.height = logicalHeight * dpr;
+            ctx.resetTransform();
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Physics Initialization with Distinct Box Widths
+        function initPhysics() {
+            engine = Engine.create({
+                gravity: { x: 0, y: 1.2 }
+            });
+
+            if (currentDifficulty === 'easy') {
+                wallPadding = 20;
+            } else if (currentDifficulty === 'normal') {
+                wallPadding = 38;
+            } else if (currentDifficulty === 'hard') {
+                wallPadding = 55;
+            }
+
+            const ground = Bodies.rectangle(logicalWidth / 2, logicalHeight + 30, logicalWidth, 80, { isStatic: true, friction: 0.8 });
+            const leftWall = Bodies.rectangle(wallPadding - 20, logicalHeight / 2, 40, logicalHeight * 2, { isStatic: true, friction: 0.5 });
+            const rightWall = Bodies.rectangle(logicalWidth - wallPadding + 20, logicalHeight / 2, 40, logicalHeight * 2, { isStatic: true, friction: 0.5 });
+
+            Composite.add(engine.world, [ground, leftWall, rightWall]);
+
+            Events.on(engine, 'collisionStart', handleCollisions);
+        }
+
+        function getRandomSpawnTier() {
+            return Math.floor(Math.random() * 3);
+        }
+
+        function startGame(diff) {
+            currentDifficulty = diff || currentDifficulty;
+            updateTierRadii();
+            score = 0;
+            scoreEl.innerText = score;
+            dangerTimer = 0;
+            dangerWarningEl.style.display = 'none';
+
+            if (engine) Composite.clear(engine.world, false);
+            initPhysics();
+
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            nextTierIndex = getRandomSpawnTier();
+            updateNextPreview();
+
+            currentAimX = logicalWidth / 2;
+            canDrop = true;
+            dropCooldown = false;
+
+            startScreen.classList.add('hidden');
+            gameoverScreen.classList.add('hidden');
+            gameActive = true;
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function updateNextPreview() {
+            const t = TIERS[nextTierIndex];
+            if (t.isImage) {
+                nextPreviewEl.innerHTML = `<img src="${t.imgObj.src}" alt="${t.name}">`;
+            } else {
+                nextPreviewEl.innerText = t.icon;
+                nextPreviewEl.style.background = t.color;
+            }
+        }
+
+        // --- MERGE PHYSICS LOGIC ---
+        function handleCollisions(event) {
+            if (!gameActive) return;
+
+            const pairs = event.pairs;
+            for (let i = 0; i < pairs.length; i++) {
+                const { bodyA, bodyB } = pairs[i];
+
+                if (bodyA.tierLevel && bodyB.tierLevel && bodyA.tierLevel === bodyB.tierLevel) {
+                    if (bodyA.isMerging || bodyB.isMerging) continue;
+
+                    const level = bodyA.tierLevel;
+                    if (level >= 8) continue;
+
+                    bodyA.isMerging = true;
+                    bodyB.isMerging = true;
+
+                    const midX = (bodyA.position.x + bodyB.position.x) / 2;
+                    const midY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                    Composite.remove(engine.world, [bodyA, bodyB]);
+
+                    const nextLevel = level + 1;
+                    const newTier = TIERS[nextLevel - 1];
+
+                    const newBody = Bodies.circle(midX, midY, newTier.radius, {
+                        restitution: 0.2,
+                        friction: 0.5,
+                        density: 0.002 + nextLevel * 0.0005
+                    });
+                    newBody.tierLevel = nextLevel;
+
+                    Composite.add(engine.world, newBody);
+
+                    score += newTier.score;
+                    scoreEl.innerText = score;
+
+                    createPopParticles(midX, midY, newTier.color);
+                    createScorePopup(midX, midY, `+${newTier.score}`);
+                }
+            }
+        }
+
+        function dropItem() {
+            if (!gameActive || !canDrop || dropCooldown) return;
+
+            dropCooldown = true;
+            const currentTier = TIERS[nextTierIndex];
+            const clampedX = Math.max(wallPadding + currentTier.radius, Math.min(logicalWidth - wallPadding - currentTier.radius, currentAimX));
+
+            const body = Bodies.circle(clampedX, dangerLineY - 30, currentTier.radius, {
+                restitution: 0.2,
+                friction: 0.5,
+                density: 0.002 + currentTier.level * 0.0005
+            });
+            body.tierLevel = currentTier.level;
+
+            Composite.add(engine.world, body);
+
+            nextTierIndex = getRandomSpawnTier();
+            updateNextPreview();
+
+            setTimeout(() => {
+                dropCooldown = false;
+            }, 500);
+        }
+
+        // --- INPUT HANDLING ---
+        function getTouchX(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            return clientX - rect.left;
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (!gameActive) return;
+            isAiming = true;
+            currentAimX = getTouchX(e);
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!gameActive || !isAiming) return;
+            currentAimX = getTouchX(e);
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            if (!gameActive || !isAiming) return;
+            isAiming = false;
+            dropItem();
+        });
+
+        // --- VISUAL EFFECTS ---
+        function createPopParticles(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    radius: Math.random() * 4 + 2,
+                    alpha: 1,
+                    color: color
+                });
+            }
+        }
+
+        function createScorePopup(x, y, text) {
+            popups.push({ x: x, y: y, text: text, alpha: 1, vy: -1.5 });
+        }
+
+        // --- MAIN RENDER LOOP ---
+        function renderLoop() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+            // Draw Container Boundaries
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(wallPadding, dangerLineY, logicalWidth - wallPadding * 2, logicalHeight - dangerLineY - 10);
+
+            // Draw Danger Warning Line
+            ctx.save();
+            ctx.setLineDash([6, 6]);
+            ctx.strokeStyle = dangerTimer > 0 ? '#ef4444' : 'rgba(239, 68, 68, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(wallPadding, dangerLineY);
+            ctx.lineTo(logicalWidth - wallPadding, dangerLineY);
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw Aiming Guide Line & Drop Preview
+            const activeTier = TIERS[nextTierIndex];
+            const clampedAimX = Math.max(wallPadding + activeTier.radius, Math.min(logicalWidth - wallPadding - activeTier.radius, currentAimX));
+
+            if (!dropCooldown) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(clampedAimX, dangerLineY - 30);
+                ctx.lineTo(clampedAimX, logicalHeight);
+                ctx.stroke();
+                ctx.restore();
+
+                drawBall(clampedAimX, dangerLineY - 30, activeTier, 0.8);
+            }
+
+            // Draw Physics Bodies
+            let overflowDetected = false;
+            const bodies = Composite.allBodies(engine.world);
+
+            bodies.forEach(body => {
+                if (body.tierLevel) {
+                    const tier = TIERS[body.tierLevel - 1];
+                    drawBall(body.position.x, body.position.y, tier, 1, body.angle);
+
+                    if (body.position.y - tier.radius < dangerLineY && Math.abs(body.velocity.y) < 0.2) {
+                        overflowDetected = true;
+                    }
+                }
+            });
+
+            if (overflowDetected) {
+                dangerTimer++;
+                dangerWarningEl.style.display = 'block';
+                if (dangerTimer > 180) {
+                    endGame();
+                    return;
+                }
+            } else {
+                dangerTimer = Math.max(0, dangerTimer - 1);
+                if (dangerTimer === 0) dangerWarningEl.style.display = 'none';
+            }
+
+            // Render Particle Effects
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.03;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Render Score Popups
+            for (let i = popups.length - 1; i >= 0; i--) {
+                let pop = popups[i];
+                pop.y += pop.vy;
+                pop.alpha -= 0.02;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pop.alpha);
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillStyle = '#facc15';
+                ctx.textAlign = 'center';
+                ctx.fillText(pop.text, pop.x, pop.y);
+                ctx.restore();
+
+                if (pop.alpha <= 0) popups.splice(i, 1);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Draw Stylized Ball or Image Element
+        function drawBall(x, y, tier, opacity = 1, angle = 0) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            const radius = tier.radius;
+
+            if (tier.isImage && tier.imgObj.complete && tier.imgObj.naturalWidth !== 0) {
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+
+                ctx.drawImage(tier.imgObj, -radius, -radius, radius * 2, radius * 2);
+
+                ctx.rotate(-angle);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                const grad = ctx.createRadialGradient(-radius * 0.3, -radius * 0.3, radius * 0.1, 0, 0, radius);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, tier.color);
+                grad.addColorStop(1, '#0f172a');
+
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.shadowColor = tier.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.rotate(-angle);
+                ctx.font = `${radius * 0.9}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(tier.icon, 0, 2);
+            }
+
+            ctx.restore();
+        }
+
+        function endGame() {
+            gameActive = false;
+            Runner.stop(runner);
+            dangerWarningEl.style.display = 'none';
+
+            document.getElementById('final-score').innerText = score;
+
+            const langData = i18n[currentLang];
+            const modeName = langData.modes[currentDifficulty];
+            const badge = document.getElementById('gameover-highscore');
+            const key = `utopia_craft_score_${currentDifficulty}`;
+            let highScore = parseInt(localStorage.getItem(key)) || 0;
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem(key, highScore);
+                badge.innerHTML = langData.newHighScoreFormat(modeName, highScore);
+                badge.style.color = '#4ade80';
+            } else {
+                badge.innerHTML = langData.highScoreFormat(modeName, highScore);
+                badge.style.color = '#facc15';
+            }
+
+            gameoverScreen.classList.remove('hidden');
+        }
+
+        function restartGame() {
+            startGame(currentDifficulty);
+        }
+
+        function goHome() {
+            gameActive = false;
+            if (runner) Runner.stop(runner);
+            updateHighScoreDisplay();
+            gameoverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
