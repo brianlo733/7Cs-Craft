@@ -16,7 +16,7 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100dvh; /* 修正：使用 100dvh 適應手機瀏覽器底部導航列高度 */
+            height: 100dvh;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #0f172a;
@@ -136,7 +136,7 @@
             background: rgba(15, 23, 42, 0.92);
             backdrop-filter: blur(10px);
             z-index: 20;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
             transition: opacity 0.3s ease;
         }
@@ -148,16 +148,16 @@
         .panel {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.18);
-            padding: 20px 16px;
-            border-radius: 24px;
-            width: 92%;
-            max-height: 94vh;
+            padding: 12px 14px;
+            border-radius: 20px;
+            width: 95%;
+            max-height: 96vh;
             overflow-y: auto;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
         }
 
         .lang-selector {
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: center;
             gap: 6px;
@@ -166,9 +166,9 @@
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #cbd5e1;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 12px;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -180,18 +180,18 @@
         }
 
         h1 {
-            margin: 0 0 6px 0;
-            font-size: 1.25rem;
+            margin: 0 0 4px 0;
+            font-size: 1.15rem;
             color: #ffffff;
             text-shadow: 0 2px 10px rgba(56, 189, 248, 0.6);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
         .title-logo {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             object-fit: cover;
             border: 1px solid rgba(255,255,255,0.4);
@@ -200,24 +200,24 @@
 
         p {
             color: #e2e8f0;
-            font-size: 0.78rem;
-            line-height: 1.4;
-            margin-bottom: 12px;
+            font-size: 0.72rem;
+            line-height: 1.3;
+            margin-bottom: 8px;
         }
 
         .preview-tabs {
             display: flex;
             justify-content: center;
             gap: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .tab-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: #94a3b8;
-            padding: 4px 12px;
+            padding: 3px 10px;
             border-radius: 10px;
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             cursor: pointer;
         }
         .tab-btn.active {
@@ -231,11 +231,11 @@
             background: rgba(250, 204, 21, 0.15);
             border: 1px solid rgba(250, 204, 21, 0.4);
             color: #facc15;
-            padding: 4px 12px;
+            padding: 3px 10px;
             border-radius: 12px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: inline-block;
         }
 
@@ -243,27 +243,27 @@
         .tier-guide {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            gap: 4px;
             background: rgba(0, 0, 0, 0.3);
-            padding: 8px;
-            border-radius: 12px;
-            margin-bottom: 14px;
+            padding: 6px;
+            border-radius: 10px;
+            margin-bottom: 8px;
         }
         .tier-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-size: 0.62rem;
+            font-size: 0.58rem;
             color: #cbd5e1;
         }
         .tier-icon {
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             margin-bottom: 2px;
             border: 1px solid rgba(255,255,255,0.3);
             overflow: hidden;
@@ -277,16 +277,16 @@
         .difficulty-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .btn-diff {
             background: linear-gradient(135deg, #00c6ff, #0072ff);
             color: white;
             border: none;
-            padding: 10px;
-            font-size: 0.85rem;
+            padding: 8px;
+            font-size: 0.8rem;
             font-weight: bold;
-            border-radius: 18px;
+            border-radius: 16px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
             transition: transform 0.1s;
@@ -312,8 +312,8 @@
             background: linear-gradient(135deg, #00c6ff, #0072ff);
             color: white;
             border: none;
-            padding: 10px 16px;
-            font-size: 0.88rem;
+            padding: 8px 14px;
+            font-size: 0.85rem;
             font-weight: bold;
             border-radius: 25px;
             cursor: pointer;
@@ -967,7 +967,7 @@
             gameoverScreen.classList.remove('hidden');
         }
 
-        /function restartGame() {
+        function restartGame() {
             startGame(currentDifficulty);
         }
 
